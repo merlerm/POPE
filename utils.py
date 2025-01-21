@@ -25,8 +25,10 @@ def create_question(question_id, image, Object, label, template):
 
 def pope(ground_truth_objects, segment_results, sample_num, template, neg_strategy, save_path, dataset):
     question_list = []
+    neg_objects = {}
     question_id = 1
     output_file = os.path.join(save_path, dataset + "_pope_" + neg_strategy + ".json")
+    output_neg_file = os.path.join(save_path, dataset + "_pope_" + neg_strategy + "_neg_objects.json")
 
     gt_objects_list = list(ground_truth_objects.keys())
     sorted_objects = sorted(ground_truth_objects.items(), key=lambda x: x[1], reverse=True)
@@ -34,6 +36,7 @@ def pope(ground_truth_objects, segment_results, sample_num, template, neg_strate
 
     for image in segment_results:
         history_object_list = []
+        neg_objects[image["image"]] = []
 
         # Positive sampling
         for i in range(sample_num):
@@ -49,6 +52,7 @@ def pope(ground_truth_objects, segment_results, sample_num, template, neg_strate
                 while selected_object in history_object_list or selected_object in image["objects"]:
                     selected_object = random.choice(gt_objects_list)
                 history_object_list.append(selected_object)
+                neg_objects[image["image"]].append(selected_object)
                 question = create_question(question_id, image["image"], selected_object, 'no', template)
                 question_list.append(question)
                 question_id += 1
@@ -60,6 +64,7 @@ def pope(ground_truth_objects, segment_results, sample_num, template, neg_strate
                     selected_object = sorted_objects[j][0]
                     if selected_object not in history_object_list and selected_object not in image["objects"]:
                         history_object_list.append(selected_object)
+                        neg_objects[image["image"]].append(selected_object)
                         question = create_question(question_id, image["image"], selected_object, 'no', template)
                         question_list.append(question)
                         question_id += 1
@@ -72,6 +77,7 @@ def pope(ground_truth_objects, segment_results, sample_num, template, neg_strate
                         selected_object = random.choice(gt_objects_list)
                         if selected_object not in history_object_list and selected_object not in image["objects"]:
                             history_object_list.append(selected_object)
+                            neg_objects[image["image"]].append(selected_object)
                             question = create_question(question_id, image["image"], selected_object, 'no', template)
                             question_list.append(question)
                             question_id += 1
@@ -84,6 +90,7 @@ def pope(ground_truth_objects, segment_results, sample_num, template, neg_strate
                     selected_object = sorted_co_occur[pos_object][j]
                     if selected_object not in history_object_list and selected_object not in image["objects"]:
                         history_object_list.append(selected_object)
+                        neg_objects[image["image"]].append(selected_object)
                         question = create_question(question_id, image["image"], selected_object, 'no', template)
                         question_list.append(question)
                         question_id += 1
@@ -95,6 +102,7 @@ def pope(ground_truth_objects, segment_results, sample_num, template, neg_strate
                         selected_object = random.choice(gt_objects_list)
                         if selected_object not in history_object_list and selected_object not in image["objects"]:
                             history_object_list.append(selected_object)
+                            neg_objects[image["image"]].append(selected_object)
                             question = create_question(question_id, image["image"], selected_object, 'no', template)
                             question_list.append(question)
                             question_id += 1
@@ -104,6 +112,10 @@ def pope(ground_truth_objects, segment_results, sample_num, template, neg_strate
         for question in question_list:
             json_str = json.dumps(question)
             f.write(json_str + "\n")
+            
+    with open(output_neg_file, 'w') as f:
+        json_str = json.dumps(neg_objects)
+        f.write(json_str)
 
 
 def generate_ground_truth_objects(segment_results, save_path, dataset):
